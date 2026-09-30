@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cubey – Rubik's Cube Timer</title>
+<style>
+:root{--bg:#f7f3ee;--card:#fff;--text:#211922;--muted:#767676;--line:#ebe5dd;--accent:#e60023;--shadow:0 2px 14px rgba(33,25,34,.08);
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121112;--card:#1e1c1f;--text:#f3eff4;--muted:#9a95a0;--line:#2e2b31;--shadow:0 2px 14px rgba(0,0,0,.4)}}
+:root[data-theme="dark"]{--bg:#121112;--card:#1e1c1f;--text:#f3eff4;--muted:#9a95a0;--line:#2e2b31;--shadow:0 2px 14px rgba(0,0,0,.4)}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Poppins",system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-tap-highlight-color:transparent}
+header{display:flex;align-items:center;gap:10px;padding:16px 20px;max-width:1200px;margin:auto}
+.logo{width:36px;height:36px;border-radius:50%;background:var(--accent);display:grid;place-items:center;color:#fff;font-weight:800}
+header h1{font-size:1.25rem;margin:0;letter-spacing:-.02em}
+header span{color:var(--muted);font-size:.85rem;margin-left:auto}
+.grid{columns:3 300px;column-gap:16px;max-width:1200px;margin:auto;padding:0 16px 40px}
+.card{break-inside:avoid;background:var(--card);border-radius:24px;padding:20px;margin-bottom:16px;box-shadow:var(--shadow)}
+.card h2{font-size:.78rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:0 0 12px;font-weight:600}
+#timerCard{text-align:center;user-select:none;touch-action:manipulation;cursor:pointer;padding:26px 16px}
+#scramble{font-family:ui-monospace,Menlo,monospace;font-size:1.05rem;line-height:1.6;letter-spacing:.03em;margin-bottom:14px;min-height:3.4em;font-weight:600}
+#time{font-size:var(--ts,84px);font-weight:800;letter-spacing:-.04em;font-variant-numeric:tabular-nums;line-height:1.1;padding:14px 0;transition:color .1s}
+#time.holding{color:#e53935}#time.ready{color:#2bb24c}#time.insp{color:#f5a300}
+.hint{color:var(--muted);font-size:.8rem}
+.btn{border:0;background:var(--line);color:var(--text);padding:9px 16px;border-radius:999px;font:inherit;font-size:.85rem;font-weight:600;cursor:pointer;transition:transform .1s,filter .15s}
+.btn:hover{filter:brightness(.95)}.btn:active{transform:scale(.96)}
+.btn.pri{background:var(--accent);color:#fff}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.center{justify-content:center}
+#cube{width:100%;height:auto;display:block}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tile{background:var(--bg);border-radius:16px;padding:10px 12px}
+.tile b{display:block;font-size:1.15rem;font-variant-numeric:tabular-nums}
+.tile small{color:var(--muted);font-size:.72rem}
+.tile.hl{background:var(--accent);color:#fff}.tile.hl small{color:#ffffffcc}
+#list{max-height:330px;overflow-y:auto;font-variant-numeric:tabular-nums;font-size:.9rem}
+.li{display:grid;grid-template-columns:32px 1fr 64px 64px auto;gap:6px;align-items:center;padding:7px 4px;border-bottom:1px solid var(--line)}
+.li:last-child{border:0}.li .n{color:var(--muted);font-size:.75rem}.li .t{font-weight:700}
+.li .a{color:var(--muted);font-size:.8rem}
+.mini{border:0;background:transparent;color:var(--muted);cursor:pointer;font:inherit;font-size:.72rem;font-weight:700;padding:3px 5px;border-radius:8px}
+.mini:hover{background:var(--line);color:var(--text)}
+.set{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;font-size:.88rem}
+.set input[type=range]{width:130px;accent-color:var(--accent)}
+.sw{width:26px;height:26px;border-radius:50%;border:3px solid var(--card);box-shadow:0 0 0 1px var(--line);cursor:pointer;padding:0}
+.sw.on{box-shadow:0 0 0 2px var(--text)}
+input[type=color]{width:32px;height:32px;border:0;padding:0;background:none;border-radius:50%;cursor:pointer}
+.cols{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;text-align:center;font-size:.7rem;color:var(--muted)}
+.cols input{width:100%;height:34px;border-radius:10px}
+.tog{appearance:none;width:42px;height:24px;background:var(--line);border-radius:99px;position:relative;cursor:pointer;transition:.2s;flex:none}
+.tog:after{content:"";position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;top:3px;left:3px;transition:.2s;box-shadow:0 1px 3px #0003}
+.tog:checked{background:var(--accent)}.tog:checked:after{left:21px}
+svg.spark{width:100%;height:70px;display:block}
+.empty{color:var(--muted);text-align:center;padding:16px 0;font-size:.85rem}
+@media(max-width:560px){#time{font-size:calc(var(--ts,84px)*.75)}.li{grid-template-columns:26px 1fr 54px 54px auto}}
+.card{border-radius:30px;padding:22px;transition:transform .2s,box-shadow .2s}
+.card:hover{transform:translateY(-3px);box-shadow:0 12px 30px rgba(33,25,34,.14)}
+.tint{background:color-mix(in srgb,var(--accent) 9%,var(--card))}
+#timerCard{background:linear-gradient(160deg,color-mix(in srgb,var(--accent) 15%,var(--card)),var(--card) 70%)}
+#timerCard:hover{transform:none}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:4px 20px 18px;max-width:1200px;margin:auto;scrollbar-width:none}
+.chip{flex:none;border:0;background:var(--card);color:var(--text);padding:10px 16px;border-radius:999px;font:inherit;font-size:.88rem;font-weight:600;cursor:pointer;box-shadow:var(--shadow);transition:.15s}
+.chip:hover{transform:translateY(-2px)}.chip.on{background:var(--accent);color:#fff}
+#scramble{white-space:pre-line;max-height:230px;overflow:auto}
+.tip{font-size:.85rem;line-height:1.8;color:var(--muted)}.tip b{color:var(--text)}
+kbd{background:var(--line);border-radius:6px;padding:1px 7px;font-size:.78rem;color:var(--text)}
+</style>
+</head>
+<body>
+<header><div class="logo">C</div><h1>Cubey</h1><span>Space = hold &amp; release · any key stops</span></header>
+<div class="chips" id="chips"></div>
+<main class="grid">
+
+<section class="card" id="timerCard">
+  <h2 id="pzName">Scramble</h2>
+  <div id="scramble"></div>
+  <div id="time">0.00</div>
+  <div class="hint" id="hint">Hold <b>Space</b> until green, release to start · or press &amp; hold here</div>
+  <div class="row center" style="margin-top:14px" onpointerdown="event.stopPropagation()" onpointerup="event.stopPropagation()" onclick="event.stopPropagation()">
+    <button class="btn pri" id="newScr">↻ New scramble</button>
+    <button class="btn" id="cpy">Copy</button>
+    <button class="btn" id="delLast">Delete last</button>
+  </div>
+</section>
+
+<section class="card tint">
+  <h2>🧩 Scrambled puzzle</h2>
+  <svg id="cube" viewBox="0 0 282 210"></svg>
+</section>
+
+<section class="card tint">
+  <h2>🏆 Averages</h2>
+  <div class="stats" id="stats"></div>
+</section>
+
+<section class="card">
+  <h2>📈 Progress</h2>
+  <svg class="spark" id="spark" viewBox="0 0 300 70" preserveAspectRatio="none"></svg>
+</section>
+
+<section class="card">
+  <h2>⏱ Solves <span id="cnt"></span></h2>
+  <div id="list"></div>
+  <div class="row" style="margin-top:12px">
+    <button class="btn" id="exp">Export CSV</button>
+    <button class="btn" id="clr">Clear all</button>
+  </div>
+</section>
+
+<section class="card">
+  <h2>🎨 Make it yours</h2>
+  <div class="set"><span>Theme</span><div class="row">
+    <button class="btn" data-th="auto">Auto</button><button class="btn" data-th="light">Light</button><button class="btn" data-th="dark">Dark</button></div></div>
+  <div class="set"><span>Accent</span><div class="row" id="accents"></div></div>
+  <div class="set"><span>Timer size</span><input type="range" id="ts" min="48" max="140"></div>
+  <div class="set"><span>3×3 scramble length</span><input type="range" id="sl" min="10" max="30"><b id="slv"></b></div>
+  <div class="set"><span>15s inspection</span><input type="checkbox" class="tog" id="insp"></div>
+  <div class="set"><span>Hide time while solving</span><input type="checkbox" class="tog" id="hide"></div>
+  <div class="set"><span>Hold time (ms)</span><input type="range" id="hold" min="0" max="800" step="50"></div>
+  <div style="margin-top:8px"><div class="cols" id="cols"></div></div>
+  <div class="row" style="margin-top:12px"><button class="btn" id="rst">Reset colours</button></div>
+</section>
+
+<section class="card tint"><h2>💡 Quick guide</h2><div class="tip"><b>Start:</b> hold <kbd>Space</kbd> until green, then release.<br><b>Stop:</b> any key or tap.<br><b>Switch puzzle:</b> tap a chip at the top; each keeps its own times.<br><b>Fix a solve:</b> use +2 / DNF / ✕ in the list.<br><b>Esc</b> cancels inspection.</div></section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const DEF={pz:'333',theme:'auto',accent:'#e60023',ts:84,sl:20,insp:false,hide:false,hold:300,
+ colors:{U:'#ffffff',D:'#ffd500',F:'#009b48',B:'#0046ad',R:'#b71234',L:'#ff5800'}};
+let S=JSON.parse(JSON.stringify(DEF)),solves=[],all={};
+try{const d=JSON.parse(localStorage.getItem('cubey')||'null');if(d){Object.assign(S,d.S||{});S.colors=Object.assign({},DEF.colors,(d.S||{}).colors);all=d.all||{};if(d.solves)all['333']=d.solves}}catch(e){}
+solves=all[S.pz]=all[S.pz]||[];
+const save=()=>{try{all[S.pz]=solves;localStorage.setItem('cubey',JSON.stringify({S,all}))}catch(e){}};
+
+/* ---------- puzzles ---------- */
+const PUZ=[['222','2×2','🟦','c',2,9],['333','3×3','🧊','c',3,20],['444','4×4','🎲','c',4,40],['555','5×5','🧩','c',5,60],['666','6×6','🔷','c',6,80],['777','7×7','🌈','c',7,100],['pyra','Pyraminx','🔺','p'],['skewb','Skewb','💎','s'],['mega','Megaminx','⭐','m'],['clock','Clock','🕒','k'],['333oh','3×3 OH','✋','c',3,20],['333bf','3×3 BLD','🙈','c',3,20]];
+const P=()=>PUZ.find(x=>x[0]===S.pz)||PUZ[1];
+const rnd=a=>a[Math.random()*a.length|0];
+const FACE={U:{a:1,s:1},D:{a:1,s:-1},R:{a:0,s:1},L:{a:0,s:-1},F:{a:2,s:1},B:{a:2,s:-1}};
+const NAME={'0,1,0':'U','0,-1,0':'D','1,0,0':'R','-1,0,0':'L','0,0,1':'F','0,0,-1':'B'};
+let N=3,scr=[],curScr='';
+function solved(){const r=[];for(const f in FACE){const {a,s}=FACE[f],n=[0,0,0];n[a]=s;
+ for(let i=0;i<N;i++)for(let j=0;j<N;j++){const p=[0,0,0];p[a]=s*(N-1);p[(a+1)%3]=2*i-N+1;p[(a+2)%3]=2*j-N+1;r.push({p,n:n.slice(),c:f})}}return r}
+function rot(v,a,th){const b=(a+1)%3,c=(a+2)%3,o=v.slice();
+ if(th<0){o[b]=v[c];o[c]=-v[b]}else{o[b]=-v[c];o[c]=v[b]}return o}
+function turn(st,f,t,w){const {a,s}=FACE[f],th=-s*Math.sign(t);
+ for(const k of st)if(s*k.p[a]>=N+1-2*w)for(let i=0;i<Math.abs(t);i++){k.p=rot(k.p,a,th);k.n=rot(k.n,a,th)}}
+function genCube(p){const n=p[4];N=n;const fs=n===2?['R','U','F']:Object.keys(FACE),len=n===3?S.sl:p[5],mw=n>=4?n>>1:1,seq=[];let last='',ax=[-1,-1];
+ while(seq.length<len){const f=rnd(fs),a=FACE[f].a;
+  if(f===last||(a===ax[0]&&a===ax[1]))continue;
+  seq.push([f,rnd([1,2,-1]),1+(Math.random()*mw|0)]);last=f;ax=[a,ax[0]]}
+ return seq}
+const mstr=m=>(m[2]>2?m[2]:'')+m[0]+(m[2]>1?'w':'')+(m[1]===2?'2':m[1]<0?"'":'');
+function genOther(t){
+ if(t==='p'){const o=[];let l='';while(o.length<10){const f=rnd(['U','L','R','B']);if(f===l)continue;l=f;o.push(f+rnd(['',"'"]))}
+  ['u','l','r','b'].forEach(x=>{const v=rnd(['',"'",null]);if(v!==null)o.push(x+v)});return o.join(' ')}
+ if(t==='s'){const o=[];let l='';while(o.length<9){const f=rnd(['R','L','U','B']);if(f===l)continue;l=f;o.push(f+rnd(['',"'"]))}return o.join(' ')}
+ if(t==='m'){const r=[];for(let i=0;i<7;i++){const l=[];for(let j=0;j<10;j++)l.push((j%2?'D':'R')+rnd(['++','--']));l.push(rnd(['U',"U'"]));r.push(l.join(' '))}return r.join('\n')}
+ const d=x=>x+(Math.random()*7|0)+rnd(['+','-']);
+ return ['UR','DR','DL','UL','U','R','D','L','ALL'].map(d).join(' ')+' y2 '+['U','R','D','L','ALL'].map(d).join(' ')+' '+['UR','DR','DL','UL'].filter(()=>Math.random()>.5).join(' ')}
+function newScramble(){const p=P();$('pzName').textContent=p[2]+' '+p[1]+' scramble';let txt;
+ if(p[3]==='c'){scr=genCube(p);txt=scr.map(mstr).join('  ')}else{scr=[];txt=genOther(p[3])}
+ curScr=txt;const e=$('scramble');e.textContent=txt;e.style.fontSize=txt.length>160?'.85rem':'1.05rem';drawCube()}
+function drawCube(){const p=P();
+ if(p[3]!=='c'){$('cube').innerHTML=`<text x="141" y="100" text-anchor="middle" font-size="44">${p[2]}</text><text x="141" y="135" text-anchor="middle" fill="var(--muted)" font-size="11">Image preview is available for NxN cubes</text>`;return}
+ const st=solved();scr.forEach(m=>turn(st,m[0],m[1],m[2]));
+ const off={U:[1,0],L:[0,1],F:[1,1],R:[2,1],B:[3,1],D:[1,2]},cs=66/N,M=N-1;let h='';
+ for(const k of st){const f=NAME[k.n.join()],[x,y,z]=k.p.map(q=>(q+M)/2);let r,c;
+  if(f==='U'){r=z;c=x}else if(f==='D'){r=M-z;c=x}else if(f==='F'){r=M-y;c=x}
+  else if(f==='B'){r=M-y;c=M-x}else if(f==='R'){r=M-y;c=M-z}else{r=M-y;c=z}
+  h+=`<rect x="${off[f][0]*72+c*cs+.5}" y="${off[f][1]*72+r*cs+.5}" width="${cs-1}" height="${cs-1}" rx="${Math.max(1.5,cs/6)}" fill="${S.colors[k.c]}" stroke="rgba(0,0,0,.25)" stroke-width=".5"/>`}
+ $('cube').innerHTML=h}
+
+/* ---------- stats ---------- */
+const val=s=>s.pen==='DNF'?Infinity:s.t+(s.pen===2?2000:0);
+function fmt(ms){if(ms===Infinity||ms==null||isNaN(ms))return ms===Infinity?'DNF':'–';
+ const s=ms/1000;if(s>=60){const m=s/60|0;return m+':'+(s-m*60).toFixed(2).padStart(5,'0')}return s.toFixed(2)}
+function avgAt(end,n){if(end+1<n)return null;const a=solves.slice(end+1-n,end+1).map(val).sort((x,y)=>x-y);
+ if(a[n-2]===Infinity)return Infinity;const m=a.slice(1,n-1);return m.reduce((p,c)=>p+c,0)/m.length}
+function bestAvg(n){let b=null;for(let i=n-1;i<solves.length;i++){const v=avgAt(i,n);if(v!=null&&v!==Infinity&&(b==null||v<b))b=v}return b}
+function render(){const v=solves.map(val),ok=v.filter(x=>x!==Infinity),L=solves.length-1;
+ const t=(l,x,c='')=>`<div class="tile ${c}"><small>${l}</small><b>${x}</b></div>`;
+ const mean=ok.length?ok.reduce((a,b)=>a+b,0)/ok.length:null;
+ $('stats').innerHTML=t('Current',L>=0?fmt(v[L])+(solves[L].pen===2?'+':''):'–','hl')+t('Best',ok.length?fmt(Math.min(...ok)):'–')
+  +t('Ao5',fmt(avgAt(L,5)),'hl')+t('Ao12',fmt(avgAt(L,12)),'hl')+t('Best Ao5',fmt(bestAvg(5)))+t('Best Ao12',fmt(bestAvg(12)))
+  +t('Mean',fmt(mean))+t('Worst',ok.length?fmt(Math.max(...ok)):'–');
+ $('cnt').textContent=solves.length?'('+solves.length+')':'';
+ $('list').innerHTML=solves.length?solves.map((s,i)=>i).reverse().map(i=>{const s=solves[i];
+  return `<div class="li" title="${s.scr||''}"><span class="n">${i+1}</span><span class="t">${fmt(v[i])}${s.pen===2?'+':''}</span>
+  <span class="a">${fmt(avgAt(i,5))}</span><span class="a">${fmt(avgAt(i,12))}</span>
+  <span><button class="mini" data-a="p2" data-i="${i}">+2</button><button class="mini" data-a="dnf" data-i="${i}">DNF</button><button class="mini" data-a="del" data-i="${i}">✕</button></span></div>`}).join('')
+  :'<div class="empty">No solves yet — hold Space and go!</div>';
+ // sparkline
+ const d=ok.length?v.slice(-30):[];const fin=d.filter(x=>x!==Infinity);
+ if(fin.length>1){const mn=Math.min(...fin),mx=Math.max(...fin),r=(mx-mn)||1;
+  const pts=d.map((x,i)=>x===Infinity?null:[i/(d.length-1)*290+5,62-(x-mn)/r*54]).filter(Boolean);
+  $('spark').innerHTML=`<polyline fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" points="${pts.map(p=>p.join()).join(' ')}"/>`
+   +pts.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="2.5" fill="var(--accent)"/>`).join('')}
+ else $('spark').innerHTML='<text x="150" y="40" text-anchor="middle" fill="var(--muted)" font-size="11">Solve a few times to see your curve</text>';
+ save()}
+
+/* ---------- timer ---------- */
+let phase='idle',t0=0,raf=0,holdT=0,insp=0,inspI=0,pen=0;const T=$('time');
+function setCls(c){T.className=c||''}
+function startInspect(){insp=performance.now();setCls('insp');$('hint').textContent='Inspecting… hold Space & release to start';
+ const tick=()=>{const e=(performance.now()-insp)/1000,r=15-e;
+  T.textContent=r>0?Math.ceil(r):r>-2?'+2':'DNF';if(insp)inspI=requestAnimationFrame(tick)};tick()}
+function press(){
+ if(phase==='running')return stop();
+ if(phase!=='idle')return;
+ if(S.insp&&!insp)return startInspect();
+ phase='holding';setCls('holding');clearTimeout(holdT);
+ holdT=setTimeout(()=>{if(phase==='holding'){phase='ready';setCls('ready')}},S.hold)}
+function release(){
+ if(phase==='holding'){clearTimeout(holdT);phase='idle';setCls(insp?'insp':'');return}
+ if(phase==='ready'){pen=0;if(insp){const e=(performance.now()-insp)/1000;pen=e>17?'DNF':e>15?2:0;cancelAnimationFrame(inspI);insp=0}
+  phase='running';setCls('');t0=performance.now();$('hint').textContent='Press any key to stop';
+  const tick=()=>{T.textContent=S.hide?'Solving…':fmt(performance.now()-t0).replace(/(\.\d)\d$/,'$1')+'';if(phase==='running')raf=requestAnimationFrame(tick)};tick()}}
+function stop(){const e=performance.now()-t0,pb=Math.min(...solves.map(val));phase='idle';cancelAnimationFrame(raf);
+ solves.push({t:Math.round(e/10)*10,pen,scr:curScr.replace(/\s+/g,' '),ts:Date.now()});
+ T.textContent=fmt(val(solves[solves.length-1]));$('hint').textContent=solves.length>1&&val(solves[solves.length-1])<pb?'🎉 New personal best!':'Nice! Hold Space for the next solve';
+ newScramble();render()}
+addEventListener('keydown',e=>{
+ if(e.target.matches('input:not(.tog),textarea'))return;
+ if(e.code==='Space'){e.preventDefault();if(e.repeat)return;if(e.target.tagName==='BUTTON')e.target.blur();press()}
+ else if(phase==='running'){e.preventDefault();stop()}
+ else if(e.key==='Escape'&&insp){cancelAnimationFrame(inspI);insp=0;setCls('');T.textContent='0.00'}});
+addEventListener('keyup',e=>{if(e.code==='Space'){e.preventDefault();release()}});
+const tc=$('timerCard');
+tc.addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;e.preventDefault();press()});
+addEventListener('pointerup',()=>{if(phase==='holding'||phase==='ready')release()});
+
+/* ---------- actions ---------- */
+$('newScr').onclick=newScramble;
+$('delLast').onclick=()=>{solves.pop();render();T.textContent=solves.length?fmt(val(solves[solves.length-1])):'0.00'};
+$('clr').onclick=()=>{if(solves.length&&confirm('Delete all solves?')){all[S.pz]=solves=[];render();T.textContent='0.00'}};
+$('list').onclick=e=>{const b=e.target.closest('button');if(!b)return;const i=+b.dataset.i,s=solves[i];
+ if(b.dataset.a==='del')solves.splice(i,1);
+ else if(b.dataset.a==='p2')s.pen=s.pen===2?0:2;else s.pen=s.pen==='DNF'?0:'DNF';render()};
+$('exp').onclick=()=>{const csv='n,time,penalty,scramble\n'+solves.map((s,i)=>[i+1,(val(s)/1000).toFixed(2),s.pen||'',s.scr].join()).join('\n');
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='cubey-solves.csv';a.click()};
+
+/* ---------- settings UI ---------- */
+const ACC=['#e60023','#ff7a00','#2bb24c','#0a84ff','#7c4dff','#e91e8c'];
+$('accents').innerHTML=ACC.map(c=>`<button class="sw" data-c="${c}" style="background:${c}"></button>`).join('')+'<input type="color" id="accC" title="Custom">';
+$('cols').innerHTML=Object.keys(DEF.colors).map(f=>`<div>${f}<input type="color" data-f="${f}"></div>`).join('');
+function apply(){const r=document.documentElement;
+ S.theme==='auto'?r.removeAttribute('data-theme'):r.dataset.theme=S.theme;
+ r.style.setProperty('--accent',S.accent);r.style.setProperty('--ts',S.ts+'px');
+ document.querySelectorAll('[data-th]').forEach(b=>b.style.outline=b.dataset.th===S.theme?'2px solid var(--accent)':'none');
+ document.querySelectorAll('.sw').forEach(b=>b.classList.toggle('on',b.dataset.c===S.accent));
+ $('accC').value=S.accent;$('ts').value=S.ts;$('sl').value=S.sl;$('slv').textContent=S.sl;
+ $('insp').checked=S.insp;$('hide').checked=S.hide;$('hold').value=S.hold;
+ document.querySelectorAll('[data-f]').forEach(i=>i.value=S.colors[i.dataset.f])}
+document.querySelectorAll('[data-th]').forEach(b=>b.onclick=()=>{S.theme=b.dataset.th;apply();save()});
+$('accents').onclick=e=>{const b=e.target.closest('.sw');if(b){S.accent=b.dataset.c;apply();save()}};
+$('accC').oninput=e=>{S.accent=e.target.value;apply();save()};
+$('ts').oninput=e=>{S.ts=+e.target.value;apply();save()};
+$('sl').oninput=e=>{S.sl=+e.target.value;apply();save()};
+$('sl').onchange=newScramble;
+$('insp').onchange=e=>{S.insp=e.target.checked;insp=0;save()};
+$('hide').onchange=e=>{S.hide=e.target.checked;save()};
+$('hold').oninput=e=>{S.hold=+e.target.value;save()};
+$('cols').oninput=e=>{const f=e.target.dataset.f;if(f){S.colors[f]=e.target.value;drawCube();save()}};
+$('rst').onclick=()=>{S.colors=Object.assign({},DEF.colors);apply();drawCube();save()};
+
+function chips(){$('chips').innerHTML=PUZ.map(p=>`<button class="chip ${p[0]===S.pz?'on':''}" data-p="${p[0]}">${p[2]} ${p[1]}</button>`).join('')}
+$('chips').onclick=e=>{const b=e.target.closest('.chip');if(!b||phase!=='idle')return;all[S.pz]=solves;S.pz=b.dataset.p;solves=all[S.pz]=all[S.pz]||[];
+ if(insp){cancelAnimationFrame(inspI);insp=0;setCls('')}chips();newScramble();render();T.textContent=solves.length?fmt(val(solves[solves.length-1])):'0.00';
+ b.scrollIntoView({inline:'center',block:'nearest',behavior:'smooth'})};
+$('cpy').onclick=()=>{try{navigator.clipboard.writeText(curScr);$('cpy').textContent='Copied ✓';setTimeout(()=>$('cpy').textContent='Copy',1200)}catch(e){}};
+chips();apply();newScramble();render();
+if(solves.length)T.textContent=fmt(val(solves[solves.length-1]));
+</script>
+</body>
+</html>
